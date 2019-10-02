@@ -1277,6 +1277,7 @@ static int rtw_wx_set_freq(struct net_device *dev,
 
 	_adapter *padapter = (_adapter *)rtw_netdev_priv(dev);
 	int exp = 1, freq = 0, div = 0;
+	u8 ch_offset;
 
 	rtw_ps_deny(padapter, PS_DENY_IOCTL);
 	if (rtw_pwr_wakeup(padapter) == _FALSE)
@@ -1321,7 +1322,12 @@ static int rtw_wx_set_freq(struct net_device *dev,
 		padapter->mlmeextpriv.cur_channel = rtw_freq2ch(freq);
 		RTW_INFO("%s: set to channel %d\n", __func__, padapter->mlmeextpriv.cur_channel);
 	}
-	set_channel_bwmode(padapter, padapter->mlmeextpriv.cur_channel, HAL_PRIME_CHNL_OFFSET_DONT_CARE, CHANNEL_WIDTH_20);
+	if (rtw_get_offset_by_chbw(padapter->mlmeextpriv.cur_channel, CHANNEL_WIDTH_80, &ch_offset)) {
+		RTW_INFO("set_freq: force width to 80 mhz for 5GHz channel, ch_offset=%d\n", ch_offset);
+		set_channel_bwmode(padapter, padapter->mlmeextpriv.cur_channel, ch_offset, CHANNEL_WIDTH_80);
+	} else {
+		set_channel_bwmode(padapter, padapter->mlmeextpriv.cur_channel, HAL_PRIME_CHNL_OFFSET_DONT_CARE, CHANNEL_WIDTH_20);
+	}
 exit:
 	rtw_ps_deny_cancel(padapter, PS_DENY_IOCTL);
 
